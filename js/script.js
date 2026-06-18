@@ -3,7 +3,13 @@
    Main JavaScript
    ======================================== */
 
-const API_URL = 'http://localhost:5000/api';
+// Detect if we're running from a file:// URL (no server) or via http://
+const isFileProtocol = window.location.protocol === 'file:';
+
+// If accessed via http:// (server running), use dynamic origin for API
+// If accessed via file:// (direct open), disable server calls entirely
+const API_URL = isFileProtocol ? null : `${window.location.origin}/api`;
+
 const CLINIC_MAPS_LINK = 'https://share.google/6C62APk3ROePjW2Ir';
 let bookedSlots = [];
 let lastAppointment = null;
@@ -18,53 +24,64 @@ function openWhatsApp() {
     const { name, phone, date, time } = lastAppointment;
     const whatsappMessage = `*Appointment Confirmation*\n\nName: ${name}\nPhone: ${phone}\nDate: ${date}\nTime: ${time}\n\nClinic Location: ${CLINIC_MAPS_LINK}`;
     const encoded = encodeURIComponent(whatsappMessage);
-    window.open(`https://wa.me/919342573236?text=${encoded}`, '_blank');
+    const waUrl = `https://wa.me/919342573236?text=${encoded}`;
+    
+    // Use window.location instead of window.open for mobile compatibility
+    window.location.href = waUrl;
+    
     closeModal('success-modal');
 }
 
 async function loadBookedSlots(date) {
-    const select = document.getElementById('popup-time');
-    const options = select.querySelectorAll('option:not([value=""])');
-    options.forEach(opt => {
-        opt.disabled = false;
-        opt.style.color = '';
-        opt.style.backgroundColor = '';
-    });
-    if (!date) return;
-
     try {
-        const response = await fetch(`${API_URL}/appointments?date=${date}`, {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' },
-            cache: 'no-cache'
+        const select = document.getElementById('popup-time');
+        if (!select) return;
+        const options = select.querySelectorAll('option:not([value=""])');
+        options.forEach(opt => {
+            opt.disabled = false;
+            opt.style.color = '';
+            opt.style.backgroundColor = '';
         });
-        if (!response.ok) throw new Error('Failed');
-        const appointments = await response.json();
-        bookedSlots = appointments.filter(a => a.date === date).map(a => a.time);
+        if (!date) return;
 
-        if (bookedSlots.length > 0) {
-            options.forEach(opt => {
-                if (bookedSlots.includes(opt.value)) {
-                    opt.disabled = true;
-                    opt.title = 'This time slot is already booked';
-                    opt.style.color = '#dc2626';
-                    opt.style.backgroundColor = '#fee2e2';
+        // Try fetching from server only if we have an API_URL (not file://)
+        if (API_URL) {
+            try {
+                const response = await fetch(`${API_URL}/appointments?date=${date}`, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    cache: 'no-cache',
+                    signal: AbortSignal.timeout(2000)
+                });
+                if (response.ok) {
+                    const appointments = await response.json();
+                    bookedSlots = appointments.filter(a => a.date === date).map(a => a.time);
+                    markBookedSlots(options);
+                    return;
                 }
-            });
+            } catch (e) {
+                // Server fetch failed, fall through to localStorage
+            }
         }
-    } catch (e) {
+
+        // Fallback to localStorage
         const local = JSON.parse(localStorage.getItem('dentalAppointments') || '[]');
         bookedSlots = local.filter(a => a.date === date).map(a => a.time);
-        if (bookedSlots.length > 0) {
-            options.forEach(opt => {
-                if (bookedSlots.includes(opt.value)) {
-                    opt.disabled = true;
-                    opt.title = 'This time slot is already booked';
-                    opt.style.color = '#dc2626';
-                    opt.style.backgroundColor = '#fee2e2';
-                }
-            });
-        }
+        markBookedSlots(options);
+        
+    } catch (e2) {}
+}
+
+function markBookedSlots(options) {
+    if (bookedSlots.length > 0) {
+        options.forEach(opt => {
+            if (bookedSlots.includes(opt.value)) {
+                opt.disabled = true;
+                opt.title = 'This time slot is already booked';
+                opt.style.color = '#dc2626';
+                opt.style.backgroundColor = '#fee2e2';
+            }
+        });
     }
 }
 
@@ -78,8 +95,10 @@ function showServiceDetails(title, description) {
     alert(`${title}\n\n${description}`);
 }
 
-async function submitAppointmentToServer() {
-    console.log('1. Form submission started');
+function submitAppointmentToServer(e) {
+    // Prevent form from submitting/reloading the page
+    if (e) e.preventDefault();
+
     const name = document.getElementById('popup-name').value.trim();
     const phone = document.getElementById('popup-phone').value.trim();
     const email = document.getElementById('popup-email').value.trim();
@@ -88,8 +107,6 @@ async function submitAppointmentToServer() {
     const selectedIndex = document.getElementById('popup-time').selectedIndex;
     const selectEl = document.getElementById('popup-time');
     const phoneRegex = /^[6-9]\d{9}$/;
-
-    console.log('2. Form values:', { name, phone, email, date, time });
 
     if (!phoneRegex.test(phone)) {
         alert('Please enter valid 10 digit mobile number');
@@ -102,76 +119,68 @@ async function submitAppointmentToServer() {
 
     const appointmentData = { name, phone, email, date, time };
 
+    // Save to localStorage immediately
     try {
-        console.log('3. Sending POST request to:', `${API_URL}/appointments`);
-        const response = await fetch(`${API_URL}/appointments`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(appointmentData)
-        });
-
-        console.log('4. Response status:', response.status);
-
-        if (response.ok) {
-            console.log('5. Response OK, showing popup');
-            let emailOk = false;
-            try {
-                const emailResp = await fetch(`${API_URL}/send-email`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...appointmentData, mapsLink: CLINIC_MAPS_LINK })
-                });
-                emailOk = emailResp.ok;
-            } catch (e) {
-                emailOk = false;
-            }
-
-            lastAppointment = { name, phone, date, time };
-            document.getElementById('success-message').textContent = `Name: ${name}\nDate: ${date}\nTime: ${time}`;
-            const successModal = document.getElementById('success-modal');
-            console.log('6. Success modal element:', successModal);
-            if (successModal) {
-                successModal.style.display = 'block';
-                console.log('7. Modal display set to block');
-            } else {
-                console.log('7. ERROR: Success modal not found!');
-            }
-            
-            document.getElementById('quick-appointment-form').reset();
-            loadBookedSlots(date);
-        } else {
-            alert('❌ Failed to save appointment');
-        }
-    } catch (error) {
-        console.log('8. Error caught:', error);
-        alert('✅ Appointment booked! (Server offline - saved locally)');
         const appointments = JSON.parse(localStorage.getItem('dentalAppointments') || '[]');
         appointments.push({ ...appointmentData, status: 'Pending' });
         localStorage.setItem('dentalAppointments', JSON.stringify(appointments));
-        
-        const whatsappMessage = `*New Appointment Request*\n\nName: ${name}\nPhone: ${phone}\nEmail: ${email}\nDate: ${date}\nTime: ${time}`;
-        const encoded = encodeURIComponent(whatsappMessage);
-        window.open(`https://wa.me/919342573236?text=${encoded}`, '_blank');
+    } catch (e) {}
 
-        try {
-            await fetch(`${API_URL}/send-email`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(appointmentData)
-            });
-        } catch (e) {}
-        
-        closeModal('appointment-modal');
+    // Show success popup IMMEDIATELY
+    showSuccessPopup(name, phone, date, time);
+    document.getElementById('quick-appointment-form').reset();
+    loadBookedSlots(date);
+
+    // Try to save to server in background ONLY if not file:// protocol
+    if (API_URL) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+        fetch(`${API_URL}/appointments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(appointmentData),
+            signal: controller.signal
+        })
+        .then(response => {
+            clearTimeout(timeoutId);
+            if (response.ok) {
+                fetch(`${API_URL}/send-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...appointmentData, mapsLink: CLINIC_MAPS_LINK })
+                }).catch(() => {});
+            }
+        })
+        .catch(() => {
+            clearTimeout(timeoutId);
+        });
     }
 
     return false;
 }
 
+function showSuccessPopup(name, phone, date, time) {
+    lastAppointment = { name, phone, date, time };
+    const msgEl = document.getElementById('success-message');
+    if (msgEl) {
+        msgEl.innerHTML = `Name: ${name}<br>Date: ${date}<br>Time: ${time}`;
+    }
+    const successModal = document.getElementById('success-modal');
+    if (successModal) {
+        successModal.style.display = 'flex';
+    }
+}
+
 async function loadAppointmentsFromServer() {
     const tableBody = document.getElementById('appointments-table-body');
     tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:25px;">Loading appointments...</td></tr>';
-    
+
     try {
+        if (!API_URL) {
+            throw new Error('No server (file:// mode)');
+        }
+
         const response = await fetch(`${API_URL}/appointments`, {
             method: 'GET',
             headers: {
@@ -180,13 +189,13 @@ async function loadAppointmentsFromServer() {
             },
             cache: 'no-cache'
         });
-        
+
         if (!response.ok) {
             throw new Error('Server response not available');
         }
-        
+
         const appointments = await response.json();
-        
+
         if (appointments.length === 0) {
             tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:25px;">✅ No appointments booked yet</td></tr>';
             return;
@@ -205,18 +214,18 @@ async function loadAppointmentsFromServer() {
                 </td>
             </tr>
         `).join('');
-            
+
         document.getElementById('clear-appointments').onclick = async function() {
             if(confirm('Are you sure you want to delete all appointments?')) {
                 await fetch(`${API_URL}/appointments`, { method: 'DELETE' });
                 loadAppointmentsFromServer();
             }
         };
-        
+
     } catch (error) {
         tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:25px; color: #dc2626;">⚠️ Server offline - showing local appointments</td></tr>';
         const appointments = JSON.parse(localStorage.getItem('dentalAppointments') || '[]');
-        
+
         if (appointments.length > 0) {
             tableBody.innerHTML += appointments.map(apt => `
                 <tr>
@@ -234,13 +243,13 @@ async function loadAppointmentsFromServer() {
 document.addEventListener('DOMContentLoaded', function() {
     const hamburger = document.querySelector('.hamburger');
     const navMenu = document.querySelector('.nav-menu');
-    
+
     if (hamburger && navMenu) {
         hamburger.addEventListener('click', function() {
             hamburger.classList.toggle('active');
             navMenu.classList.toggle('active');
         });
-        
+
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', () => {
                 hamburger.classList.remove('active');
@@ -248,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-    
+
     const header = document.getElementById('header');
     if (header) {
         window.addEventListener('scroll', function() {
@@ -259,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     const counters = document.querySelectorAll('.counter-number');
     if (counters.length && !window.countersAnimated) {
         window.countersAnimated = true;
@@ -268,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const duration = 2000;
             const increment = target / (duration / 16);
             let current = 0;
-            
+
             const updateCounter = () => {
                 current += increment;
                 if (current < target) {
@@ -278,11 +287,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     counter.textContent = target;
                 }
             };
-            
+
             updateCounter();
         });
     }
-    
+
     const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
     const observer = new IntersectionObserver(function(entries) {
         entries.forEach(entry => {
@@ -291,17 +300,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }, observerOptions);
-    
+
     document.querySelectorAll('.feature-card, .service-card, .testimonial-card, .faq-item, .counters').forEach(el => {
         el.style.opacity = '0';
         el.style.transform = 'translateY(30px)';
         el.style.transition = 'all 0.6s ease-out';
         observer.observe(el);
     });
-    
+
     const style = document.createElement('style');
     style.textContent = `.visible { opacity: 1 !important; transform: translateY(0) !important; }`;
     document.head.appendChild(style);
-    
+
+    // Attach submit handler to the appointment form
+    const form = document.getElementById('quick-appointment-form');
+    if (form) {
+        form.addEventListener('submit', submitAppointmentToServer);
+    }
+
     console.log('✅ Sri Sheshashayi Dental Clinic Website Loaded Successfully');
+    console.log(`   Mode: ${isFileProtocol ? 'Offline (file://)' : 'Server (' + window.location.origin + ')'}`);
 });
