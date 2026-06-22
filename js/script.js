@@ -162,10 +162,26 @@ function submitAppointmentToServer(e) {
 
 function showSuccessPopup(name, phone, date, time) {
     lastAppointment = { name, phone, date, time };
-    const msgEl = document.getElementById('success-message');
-    if (msgEl) {
-        msgEl.innerHTML = `Name: ${name}<br>Date: ${date}<br>Time: ${time}`;
-    }
+    
+    // Format date nicely (e.g., "24 June 2026")
+    let formattedDate = date;
+    try {
+        const parts = date.split('-');
+        if (parts.length === 3) {
+            const d = new Date(parts[0], parts[1] - 1, parts[2]);
+            const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            formattedDate = parseInt(parts[2]) + ' ' + months[parseInt(parts[1]) - 1] + ' ' + parts[0];
+        }
+    } catch(e) {}
+    
+    const nameEl = document.getElementById('success-name');
+    const dateEl = document.getElementById('success-date');
+    const timeEl = document.getElementById('success-time');
+    
+    if (nameEl) nameEl.textContent = name;
+    if (dateEl) dateEl.textContent = formattedDate;
+    if (timeEl) timeEl.textContent = time;
+    
     const successModal = document.getElementById('success-modal');
     if (successModal) {
         successModal.style.display = 'flex';
@@ -311,6 +327,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const style = document.createElement('style');
     style.textContent = `.visible { opacity: 1 !important; transform: translateY(0) !important; }`;
     document.head.appendChild(style);
+
+    // Set today's date as default for date picker
+    const dateInput = document.getElementById('popup-date');
+    if (dateInput) {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        dateInput.value = `${yyyy}-${mm}-${dd}`;
+    }
 
     // Attach submit handler to the appointment form
     const form = document.getElementById('quick-appointment-form');

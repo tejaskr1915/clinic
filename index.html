@@ -201,7 +201,7 @@
                         </div>
                         <div class="form-group">
                             <label>Phone Number *</label>
-                            <input type="tel" id="popup-phone" required placeholder="10 digit mobile number">
+                            <input type="tel" id="popup-phone" required maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" placeholder="10 digit mobile number">
                         </div>
                     </div>
                     <div class="form-group">
@@ -490,20 +490,20 @@
                 <p>Visit our clinic or get in touch with us</p>
             </div>
             <div class="contact-info">
-                <div class="contact-item">
+                <a href="https://share.google/6C62APk3ROePjW2Ir" target="_blank" rel="noopener noreferrer" class="contact-item" style="text-decoration: none; display: block;">
                     <i class="fas fa-map-marker-alt"></i>
                     <div>
                         <h4>Address</h4>
                         <p>No. 1347, Pavan Heights, 60 Feet Road,<br>Opposite Rastrothana Yoga Center,<br>AECS Layout, Kundalahalli, Bangalore - 560037</p>
                     </div>
-                </div>
-                <div class="contact-item">
+                </a>
+                <a href="tel:+919342573236" class="contact-item" style="text-decoration: none; display: block;">
                     <i class="fas fa-phone"></i>
                     <div>
                         <h4>Phone</h4>
                         <p>+91 9342573236</p>
                     </div>
-                </div>
+                </a>
                 <div class="contact-item">
                     <i class="fas fa-clock"></i>
                     <div>
@@ -543,18 +543,26 @@
 
     <!-- Success Popup Modal -->
     <div id="success-modal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 380px; text-align: left;">
             <span class="close-modal" onclick="closeModal('success-modal')">&times;</span>
-            <div style="text-align: center; padding: 10px 0;">
-                <div style="font-size: 4rem; margin-bottom: 16px;">✅</div>
-                <h2 style="color: #0B5394; margin-bottom: 12px;">Appointment Booked!</h2>
-                <p id="success-message" style="color: #6B7280; margin-bottom: 24px; font-size: 1rem;"></p>
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                    <button onclick="closeModal('success-modal')" class="btn btn-secondary" style="width: 100%; justify-content: center;">
-                        Close
-                    </button>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="background: #10b981; width: 56px; height: 56px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                    <span style="color: white; font-size: 28px;">&#10003;</span>
                 </div>
+                <h2 style="margin: 0 0 4px 0; font-size: 1.3rem; color: #0B5394; text-align: center;">Appointment Booked!</h2>
+                <p style="margin: 0; font-size: 0.85rem; color: #6B7280; text-align: center;">Your appointment has been confirmed</p>
             </div>
+            <div style="background: #f3f4f6; border-radius: 10px; padding: 14px 18px; line-height: 1.6;">
+                <div style="font-size:0.7rem;color:#9CA3AF;font-weight:600;text-transform:uppercase;letter-spacing:0.3px;">Patient Name</div>
+                <div id="success-name" style="font-size:0.95rem;color:#1F2937;font-weight:600;margin-bottom:10px;">&mdash;</div>
+                <div style="font-size:0.7rem;color:#9CA3AF;font-weight:600;text-transform:uppercase;letter-spacing:0.3px;">Date</div>
+                <div id="success-date" style="font-size:0.95rem;color:#1F2937;font-weight:600;margin-bottom:10px;">&mdash;</div>
+                <div style="font-size:0.7rem;color:#9CA3AF;font-weight:600;text-transform:uppercase;letter-spacing:0.3px;">Time</div>
+                <div id="success-time" style="font-size:0.95rem;color:#1F2937;font-weight:600;">&mdash;</div>
+            </div>
+            <button onclick="closeModal('success-modal')" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 16px;">
+                Done
+            </button>
         </div>
     </div>
 

@@ -106,22 +106,19 @@ app.delete('/api/appointments', (req, res) => {
 });
 
 // Green API WhatsApp credentials
-const WA_INSTANCE = '7107657180';
-const WA_TOKEN = '7f1734ae46414f51843884f2bc1ef95b90df4bbd2e104d2db0';
+const WA_INSTANCE = '7107657603';
+const WA_TOKEN = '1edb3165ebdd4a70bc8b8d33fdafa2d96ab6f3f5d899485ea9';
 
 async function checkWhatsAppNumber(phone) {
-    console.log(`Checking WhatsApp for ${phone}`);
     try {
-        alert("phone: " + phone);
         const formattedPhone = phone.replace(/[^0-9]/g, '');
         const fullPhone = formattedPhone.length === 10 ? `91${formattedPhone}` : formattedPhone;
         const url = `https://api.green-api.com/waInstance${WA_INSTANCE}/checkWhatsapp/${WA_TOKEN}`;
         const response = await axios.post(url, { phoneNumber: fullPhone });
         return response.data.existsWhatsapp === true;
     } catch (error) {
-        console.error(`Error checking WhatsApp for ${phone}:`, error);
+        console.error(`Error checking WhatsApp for ${phone}:`, error.message);
         return false;
-
     }
 }
 
