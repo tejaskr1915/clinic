@@ -11,7 +11,7 @@ const PORT = 5000;
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Get all appointments
 app.get('/api/appointments', (req, res) => {
@@ -19,7 +19,12 @@ app.get('/api/appointments', (req, res) => {
         if (err) {
             return res.status(500).json({ error: 'Failed to read database' });
         }
-        const db = JSON.parse(data);
+        let db;
+        try {
+            db = JSON.parse(data);
+        } catch {
+            db = { appointments: [] };
+        }
         const { date } = req.query;
         if (date) {
             return res.json(db.appointments.filter(a => a.date === date));
@@ -35,7 +40,13 @@ app.post('/api/appointments', (req, res) => {
             return res.status(500).json({ error: 'Failed to read database' });
         }
         
-        const db = JSON.parse(data);
+        let db;
+        try {
+            db = JSON.parse(data);
+        } catch {
+            db = { appointments: [] };
+        }
+        
         const newAppointment = {
             id: Date.now(),
             ...req.body,
@@ -66,7 +77,13 @@ app.put('/api/appointments/:id', (req, res) => {
             return res.status(500).json({ error: 'Failed to read database' });
         }
         
-        const db = JSON.parse(data);
+        let db;
+        try {
+            db = JSON.parse(data);
+        } catch {
+            db = { appointments: [] };
+        }
+        
         const appointmentId = parseInt(req.params.id);
         
         db.appointments = db.appointments.map(apt => {

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Sri Sheshashayi Dental Clinic</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* Login Screen */
+        .login-screen {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, #0F6CBF 0%, #0B5394 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .login-box {
+            background: white;
+            padding: 48px 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .login-box .lock-icon {
+            font-size: 3rem;
+            color: #0F6CBF;
+            margin-bottom: 16px;
+        }
+        .login-box h2 {
+            color: #0B5394;
+            margin-bottom: 8px;
+            font-size: 1.5rem;
+        }
+        .login-box p {
+            color: #6B7280;
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+        }
+        .login-box input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .login-box input:focus {
+            border-color: #0F6CBF;
+        }
+        .login-box .login-error {
+            color: #dc2626;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+            display: none;
+        }
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .admin-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #0B5394;
+        }
+        .admin-actions {
+            display: flex;
+            gap: 12px;
+        }
+        .table-container {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(15, 108, 191, 0.1);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .appointments-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 800px;
+        }
+        .appointments-table th {
+            background: linear-gradient(135deg, #0F6CBF 0%, #0B5394 100%);
+            color: white;
+            padding: 16px 20px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .appointments-table td {
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid #f1f5f9;
+            background-color: #ffffff;
+        }
+        .appointments-table tr:hover td {
+            background-color: #f8fafc;
+        }
+        .status-success {
+            color: #10b981;
+            font-weight: 600;
+        }
+        .status-pending {
+            color: #0F6CBF;
+            font-weight: 600;
+        }
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #b91c1c;
+            transform: translateY(-1px);
+        }
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #6B7280;
+            font-size: 1.1rem;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #0F6CBF;
+            font-size: 1.1rem;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #0F6CBF;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: var(--transition);
+        }
+        .back-link:hover {
+            gap: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-box">
+            <div class="lock-icon"><i class="fas fa-lock"></i></div>
+            <h2>Admin Login</h2>
+            <p>Enter password to access the dashboard</p>
+            <input type="password" id="admin-password" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkAdminLogin()">
+            <div id="login-error" class="login-error">❌ Incorrect password. Try again.</div>
+            <button onclick="checkAdminLogin()" class="btn btn-primary" style="width:100%; justify-content:center;">Login</button>
+        </div>
+    </div>
+
+    <div class="admin-container">
+        <a href="index.html" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to Website
+        </a>
+        
+        <div class="admin-header">
+            <h1>📋 Appointments Dashboard</h1>
+            <div class="admin-actions">
+                <button onclick="loadAppointmentsFromServer()" class="btn btn-primary">
+                    <i class="fas fa-refresh"></i> Refresh
+                </button>
+                <button onclick="clearAllAppointments()" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Clear All
+                </button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="appointments-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="appointments-table-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="/js/script.js"></script>
+    <script>
+        const ADMIN_PASSWORD = 'admin123';
+
+        function checkAdminLogin() {
+            const password = document.getElementById('admin-password').value;
+            const errorEl = document.getElementById('login-error');
+            
+            if (password === ADMIN_PASSWORD) {
+                document.getElementById('login-screen').style.display = 'none';
+                errorEl.style.display = 'none';
+                loadAppointmentsFromServer();
+            } else {
+                errorEl.style.display = 'block';
+                document.getElementById('admin-password').value = '';
+                document.getElementById('admin-password').focus();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Focus on password input when page loads
+            document.getElementById('admin-password').focus();
+        });
+
+        async function loadAppointmentsFromServer() {
+            const tableBody = document.getElementById('appointments-table-body');
+            tableBody.innerHTML = '<tr><td colspan="7" class="loading">Loading appointments...</td></tr>';
+            
+            try {
+                const response = await fetch('/api/appointments', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    cache: 'no-cache'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Server response not available');
+                }
+                
+                const appointments = await response.json();
+                
+                if (appointments.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="7" class="no-data">✅ No appointments booked yet</td></tr>';
+                    return;
+                }
+
+                tableBody.innerHTML = appointments.map(apt => `
+                    <tr>
+                        <td>${apt.name}</td>
+                        <td>${apt.phone}</td>
+                        <td>${apt.email || '-'}</td>
+                        <td>${apt.date}</td>
+                        <td>${apt.time}</td>
+                        <td class="status-${apt.status.toLowerCase()}">${apt.status}</td>
+                        <td>
+                            <button onclick="updateAppointmentStatus(${apt.id}, 'Success')" class="btn-sm btn-success">
+                                ✓ Mark Done
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+                    
+            } catch (error) {
+                tableBody.innerHTML = '<tr><td colspan="7" class="no-data" style="color: #dc2626;">⚠️ Server offline - showing local appointments</td></tr>';
+                const appointments = JSON.parse(localStorage.getItem('dentalAppointments') || '[]');
+                
+                if (appointments.length > 0) {
+                    tableBody.innerHTML += appointments.map(apt => `
+                        <tr>
+                            <td>${apt.name}</td>
+                            <td>${apt.phone}</td>
+                            <td>${apt.email || '-'}</td>
+                            <td>${apt.date}</td>
+                            <td>${apt.time}</td>
+                            <td class="status-pending">${apt.status}</td>
+                        </tr>
+                    `).join('');
+                }
+            }
+        }
+
+        async function updateAppointmentStatus(id, status) {
+            try {
+                await fetch(`/api/appointments/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                loadAppointmentsFromServer();
+            } catch (error) {
+                alert('Failed to update status');
+            }
+        }
+
+        async function clearAllAppointments() {
+            if (!confirm('Are you sure you want to delete all appointments? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                await fetch('/api/appointments', { 
+                    method: 'DELETE' 
+                });
+                loadAppointmentsFromServer();
+                alert('✅ All appointments cleared successfully');
+            } catch (error) {
+                alert('❌ Failed to clear appointments');
+            }
+        }
+    </script>
+</body>
+</html>
